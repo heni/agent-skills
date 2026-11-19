@@ -11,6 +11,7 @@
 | `agent-pipeline-init` | Инициализация проекта под сессионный пайплайн: `AGENTS.md` с правилами и чек-листом закрытия сессии, журналы (TODO/backlog/HISTORY), накопитель инсайтов (`AI.md` + главы `AI/`), глоссарий-источник правды, машинные гейты. Зависит от `review-fix-loop`. |
 | `review-fix-loop` | Адаптивная петля review→fix: профили (code/prose/proof/config/data), детерминированные гейты первыми, структурированный леджер находок, триаж по настойчивости, защита от смещений ревьюера. |
 | `math-paper-en` | Написание и аудит англоязычных математических статей (LaTeX): проза, нотация, цитаты, воспроизводимость экспериментов, pre-submission audit. |
+| `scientific-paper-translation` | Перевод технических научных статей (IEEE, IFAC, ACM, CDC) с сохранением графики, формул, алгоритмов и двухколоночной вёрстки оригинала (pandoc + XeLaTeX). Код вынесен в `scripts/` (библиотека pdf_tools, драйвер pipeline, гейты check_layout/verify_translation), скелеты документов — в `templates/`, к ним pytest-тесты на синтетических PDF (`tests/`). |
 
 ## Установка
 
@@ -19,13 +20,13 @@ Codex CLI). Клонируем в отдельный каталог и выст�
 в `~/.agents/skills/` вложит скиллы на лишний уровень (`agent-skills/<имя>`)
 и они не будут найдены:
 
-    git clone git@github.com:heni/agent-skills.git ~/src/agent-skills
-    ln -s ~/src/agent-skills/<имя> ~/.agents/skills/<имя>   # Kimi Code, Codex CLI
-    ln -s ~/src/agent-skills/<имя> ~/.claude/skills/<имя>   # Claude Code
+    git clone git@github.com:heni/agent-skills.git ~/agent-skills
+    ln -s ~/agent-skills/<имя> ~/.agents/skills/<имя>   # Kimi Code, Codex CLI
+    ln -s ~/agent-skills/<имя> ~/.claude/skills/<имя>   # Claude Code
 
 ## Обновление
 
-    cd ~/src/agent-skills && git pull
+    cd ~/agent-skills && git pull
 
 ## Зависимости между скиллами
 

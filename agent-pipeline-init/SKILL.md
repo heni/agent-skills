@@ -39,9 +39,9 @@ whenToUse: Когда нужно настроить новый (или суще�
 - **Скилл `review-fix-loop`** — цикл качества из §7 шаблона. Оба скилла живут в
   одном репозитории `heni/agent-skills` (github.com/heni/agent-skills). Установка:
 
-      git clone git@github.com:heni/agent-skills.git ~/src/agent-skills
-      ln -s ~/src/agent-skills/review-fix-loop ~/.agents/skills/review-fix-loop
-      ln -s ~/src/agent-skills/review-fix-loop ~/.claude/skills/review-fix-loop
+      git clone git@github.com:heni/agent-skills.git ~/agent-skills
+      ln -s ~/agent-skills/review-fix-loop ~/.agents/skills/review-fix-loop
+      ln -s ~/agent-skills/review-fix-loop ~/.claude/skills/review-fix-loop
 
   (`~/.agents/skills/` нативно сканируется Kimi Code и Codex CLI, `~/.claude/skills/` —
   Claude Code. Клонировать репо прямо в `~/.agents/skills/` нельзя: скиллы окажутся
