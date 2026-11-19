@@ -189,8 +189,11 @@ def test_verify_translation_flags_markers(tmp_path, capsys):
 
 @pytest.mark.skipif(not (shutil.which("pandoc") and shutil.which("xelatex")),
                     reason="нужны pandoc и xelatex")
-def test_tex_log_check_no_overfull(tmp_path):
+def test_tex_log_check_no_overfull(tmp_path, monkeypatch):
     from check_layout import tex_log_check
+    # tex_log_check пишет chk.* относительно cwd — изолируем tmp_path,
+    # иначе прогон тестов из каталога скилла мусорит в него
+    monkeypatch.chdir(tmp_path)
     template = subprocess.run(["pandoc", "-D", "latex"], capture_output=True,
                               text=True, check=True).stdout
     tpl = tmp_path / "tpl.tex"
