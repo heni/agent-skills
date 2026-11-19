@@ -2,7 +2,7 @@
 name: scientific-paper-translation
 description: Перевод технических научных статей (IEEE, IFAC, ACM, CDC) с полным сохранением графиков, формул, алгоритмов и двухколоночной вёрстки оригинала. Использовать при переводе статей на русский с извлечением векторной/растровой графики из PDF, воспроизведением псевдокода, таблиц и библиографии; pandoc + XeLaTeX как основной путь рендеринга; обязательный тест на overfull по логу компиляции и пиксельная проверка полей.
 ---
-# НАВЫК: Перевод научных статей с извлечением графиков (v4.1)
+# НАВЫК: Перевод научных статей с извлечением графиков (v4.2)
 
 ## Описание
 Комплексный навык для профессионального перевода технических научных статей (особенно IEEE, IFAC, ACM, CDC) с сохранением всех графиков, формул, алгоритмов и структуры. Использует pandoc + XeLaTeX как основной путь рендеринга. По умолчанию воспроизводит **колоночную раскладку оригинала** (двухколоночную для IEEE/CDC/L-CSS) и проверяет по логу компиляции, что ни одна формула, таблица или строка не выходит за границы колонки. Включает методы извлечения векторной и растровой графики из PDF, оформление псевдокода, библиографии и создание профессионально оформленного переведённого документа.
@@ -26,12 +26,17 @@ description: Перевод технических научных статей (
   + пиксельная проверка полей. Запуск: `python3 check_layout.py translation.md translation.pdf`.
 - `${KIMI_SKILL_DIR}/scripts/verify_translation.py` — верификация контента (Часть 11): формулы,
   `??`, английские маркеры, сверка с оригиналом. Запуск: `python3 verify_translation.py translation.md translation.pdf [original.pdf]`.
+- `${KIMI_SKILL_DIR}/scripts/translate_paper.py` — драйвер полного pipeline (Часть 9): извлечение → шаблон → fix_tags → pandoc. Запуск: `python3 translate_paper.py input.pdf output.pdf translation.md`.
+- `${KIMI_SKILL_DIR}/tests/` — pytest-тесты на синтетических PDF (`python3 -m pytest tests/ -q`); правки библиотеки без зелёных тестов не принимать.
 - `${KIMI_SKILL_DIR}/templates/article-onecol.md` — скелет документа, одна колонка (Часть 2).
 - `${KIMI_SKILL_DIR}/templates/article-twocol.md` — скелет, две колонки + `microtype`/`emergencystretch` (Часть 2A).
 
 Копирование: `cp "${KIMI_SKILL_DIR}/scripts/check_layout.py" .` — и править только данные, не код.
 
 ---
+
+## ИЗМЕНЕНИЯ В v4.2 (относительно v4.1)
+- ✅ Драйвер pipeline (Часть 9) и `optimize_png` (Проблема 7) перенесены в `scripts/translate_paper.py` и `optimize_png` в `pdf_tools.py`; добавлены тесты (`tests/`)
 
 ## ИЗМЕНЕНИЯ В v4.1 (относительно v4)
 - ✅ Скрипты и шаблоны вынесены из тела в `scripts/` и `templates/` — используются **копированием, не перепечаткой** (транскрипционные ошибки в инструментах проверки исключены)
@@ -691,42 +696,7 @@ pip install PyMuPDF reportlab Pillow --break-system-packages
 
 Пример показывает склейку шагов; примитивы (извлечение изображений, `fix_tags`) — из `scripts/pdf_tools.py`.
 
-```python
-import fitz, os, re, subprocess
-
-def translate_paper(input_pdf, output_pdf, markdown_content):
-    # 1. Извлечь изображения (Стратегия A)
-    os.makedirs("extracted_graphs", exist_ok=True)
-    doc = fitz.open(input_pdf)
-    for page_num in range(len(doc)):
-        for idx, img in enumerate(doc[page_num].get_images()):
-            xref = img[0]
-            base = doc.extract_image(xref)
-            with open(f"extracted_graphs/p{page_num}_img{idx}.{base['ext']}", "wb") as f:
-                f.write(base["image"])
-    doc.close()
-
-    # 2. Кастомный шаблон
-    result = subprocess.run(["pandoc", "-D", "latex"], capture_output=True, text=True)
-    template = result.stdout.replace(r'\usepackage{lmodern}',
-                                       r'% \usepackage{lmodern}')
-    with open("custom_template.tex", "w") as f:
-        f.write(template)
-
-    # 3. Исправить \tag → \qquad\text{(N)}
-    fixed = re.sub(r'\\tag\{([^}]+)\}',
-                   lambda m: f'\\qquad\\text{{({m.group(1)})}}', markdown_content)
-    with open("translation.md", "w") as f:
-        f.write(fixed)
-
-    # 4. Компилировать
-    subprocess.run([
-        "pandoc", "translation.md", "-o", output_pdf,
-        "--pdf-engine=xelatex",
-        "--template=custom_template.tex",
-        "-V", "colorlinks=true", "-V", "linkcolor=blue"
-    ], check=True)
-```
+Скрипт — `scripts/translate_paper.py` (дословно из этого примера плюс `__main__`; запуск: `python3 translate_paper.py input.pdf output.pdf translation.md`). Склейку шагов он делает сам; примитивы — в `scripts/pdf_tools.py`.
 
 ---
 
@@ -754,14 +724,7 @@ def translate_paper(input_pdf, output_pdf, markdown_content):
 ### Проблема 7: Слишком большой файл (> 20 МБ)
 **Решение:** Ужать большие PNG перед вставкой:
 
-```python
-from PIL import Image
-img = Image.open("graph.png")
-if img.width > 2000:
-    ratio = 2000 / img.width
-    img = img.resize((2000, int(img.height * ratio)), Image.LANCZOS)
-img.save("graph_opt.png", optimize=True, compress_level=9)
-```
+Функция `optimize_png` в `scripts/pdf_tools.py` (`optimize_png(path, output_path=None, max_width=2000)`).
 
 ### Проблема 8: Алгоритм ломает компиляцию
 **Возможные причины:**

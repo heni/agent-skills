@@ -112,3 +112,15 @@ def detect_columns(pdf_path, page_num=1, min_frac=0.6):
 def fix_tags(content):
     return re.sub(r'\\tag\{([^}]+)\}',
                   lambda m: f'\\qquad\\text{{({m.group(1)})}}', content)
+
+
+def optimize_png(path, output_path=None, max_width=2000):
+    """Ужать PNG шире max_width px (Проблема 7, Часть 10)."""
+    from PIL import Image
+    img = Image.open(path)
+    if img.width > max_width:
+        ratio = max_width / img.width
+        img = img.resize((max_width, int(img.height * ratio)), Image.LANCZOS)
+    out = output_path or path
+    img.save(out, optimize=True, compress_level=9)
+    return out
