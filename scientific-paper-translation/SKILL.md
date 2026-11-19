@@ -1,6 +1,6 @@
 ---
 name: scientific-paper-translation
-description: Перевод технических научных статей (IEEE, IFAC, ACM, CDC) с полным сохранением графиков, формул, алгоритмов и двухколоночной вёрстки оригинала. Использовать при переводе статей на русский с извлечением векторной/растровой графики из PDF, воспроизведением псевдокода, таблиц и библиографии; pandoc + XeLaTeX как основной путь рендеринга; обязательный тест на overfull по логу компиляции и пиксельная проверка полей.
+description: Translate technical scientific papers (IEEE, IFAC, ACM, CDC) into Russian with full preservation of figures, formulas, algorithms, and the original two-column layout. Use when translating papers that need vector/raster graphics extraction from PDF, pseudocode, tables and bibliography reproduction; pandoc + XeLaTeX rendering; mandatory overfull check from the compile log and pixel-level margin inspection.
 ---
 # НАВЫК: Перевод научных статей с извлечением графиков (v4.2)
 
