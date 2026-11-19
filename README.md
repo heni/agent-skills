@@ -28,6 +28,15 @@ Codex CLI). Клонируем в отдельный каталог и выст�
 
     cd ~/agent-skills && git pull
 
+## Проверка целостности
+
+    ./validate.py              # static checks over every skill directory
+    ./validate.py --with-tests # also runs pytest where a skill has tests/
+
+Checks: frontmatter (name matches the directory, description within the
+indexing length limit), no changelogs or assembly markers left in SKILL.md,
+`${KIMI_SKILL_DIR}` references resolve, scripts/*.py compile.
+
 ## История версий
 
 История версий каждого скилла — в `HISTORY.md` в его каталоге (тело SKILL.md —
