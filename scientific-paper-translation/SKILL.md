@@ -2,7 +2,7 @@
 name: scientific-paper-translation
 description: Перевод технических научных статей (IEEE, IFAC, ACM, CDC) с полным сохранением графиков, формул, алгоритмов и двухколоночной вёрстки оригинала. Использовать при переводе статей на русский с извлечением векторной/растровой графики из PDF, воспроизведением псевдокода, таблиц и библиографии; pandoc + XeLaTeX как основной путь рендеринга; обязательный тест на overfull по логу компиляции и пиксельная проверка полей.
 ---
-# НАВЫК: Перевод научных статей с извлечением графиков (v4)
+# НАВЫК: Перевод научных статей с извлечением графиков (v4.1)
 
 ## Описание
 Комплексный навык для профессионального перевода технических научных статей (особенно IEEE, IFAC, ACM, CDC) с сохранением всех графиков, формул, алгоритмов и структуры. Использует pandoc + XeLaTeX как основной путь рендеринга. По умолчанию воспроизводит **колоночную раскладку оригинала** (двухколоночную для IEEE/CDC/L-CSS) и проверяет по логу компиляции, что ни одна формула, таблица или строка не выходит за границы колонки. Включает методы извлечения векторной и растровой графики из PDF, оформление псевдокода, библиографии и создание профессионально оформленного переведённого документа.
@@ -13,7 +13,28 @@ description: Перевод технических научных статей (
 - Работа с PDF, содержащими смесь векторной графики и растровых изображений
 - Создание профессионально оформленных переводов с LaTeX-формулами, алгоритмами и библиографией
 
+## Файлы скилла
+
+Устойчивые артефакты лежат рядом с этим файлом и используются **копированием в рабочий
+каталог перевода, не перепечаткой** — перепечатка даёт транскрипционные ошибки прямо в
+инструментах проверки:
+
+- `${KIMI_SKILL_DIR}/scripts/pdf_tools.py` — утилиты Части 1 и автоопределение колонок Части 2A:
+  `preview_page`, `extract_raster_images`, `crop_with_overlay_text`,
+  `remove_text_keep_graphics`, `extract_graphs_from_clean_pdf`, `detect_columns`, `fix_tags`.
+- `${KIMI_SKILL_DIR}/scripts/check_layout.py` — гейт вёрстки (Часть 11): overfull по логу XeLaTeX
+  + пиксельная проверка полей. Запуск: `python3 check_layout.py translation.md translation.pdf`.
+- `${KIMI_SKILL_DIR}/scripts/verify_translation.py` — верификация контента (Часть 11): формулы,
+  `??`, английские маркеры, сверка с оригиналом. Запуск: `python3 verify_translation.py translation.md translation.pdf [original.pdf]`.
+- `${KIMI_SKILL_DIR}/templates/article-onecol.md` — скелет документа, одна колонка (Часть 2).
+- `${KIMI_SKILL_DIR}/templates/article-twocol.md` — скелет, две колонки + `microtype`/`emergencystretch` (Часть 2A).
+
+Копирование: `cp "${KIMI_SKILL_DIR}/scripts/check_layout.py" .` — и править только данные, не код.
+
 ---
+
+## ИЗМЕНЕНИЯ В v4.1 (относительно v4)
+- ✅ Скрипты и шаблоны вынесены из тела в `scripts/` и `templates/` — используются **копированием, не перепечаткой** (транскрипционные ошибки в инструментах проверки исключены)
 
 ## ИЗМЕНЕНИЯ В v4 (относительно v3)
 - ✅ **Двухколоночная вёрстка по умолчанию**, если оригинал двухколоночный (Часть 2A): автоопределение раскладки, YAML-блок, правила для плавающих объектов, таблиц и широких формул
@@ -79,21 +100,7 @@ fc-list | grep -i "dejavu serif" | head -3
 
 **Перед попытками угадать bbox — отрендерить всю страницу при высоком DPI и определить координаты визуально.** Это экономит 2–3 итерации.
 
-```python
-import fitz
-
-def preview_page(pdf_path, page_num, scale=2):
-    """Сохранить целую страницу как PNG для визуального подбора координат.
-    Размер pixmap: width = page.rect.width * scale, height аналогично.
-    Чтобы получить PDF-координаты bbox: pixel_xy / scale."""
-    doc = fitz.open(pdf_path)
-    page = doc[page_num]
-    print(f"Page size (PDF pt): {page.rect}")
-    mat = fitz.Matrix(scale, scale)
-    pix = page.get_pixmap(matrix=mat)
-    pix.save(f"preview_page{page_num+1}.png")
-    doc.close()
-```
+Функция `preview_page` в `scripts/pdf_tools.py` (см. «Файлы скилла» выше).
 
 После просмотра определяем pixel-границы в превью, делим на `scale` — получаем PDF-координаты для финального кропа при высоком DPI.
 
@@ -109,21 +116,7 @@ def preview_page(pdf_path, page_num, scale=2):
 
 Самая быстрая. Подходит для графиков из matplotlib, R, gnuplot — они в PDF лежат как готовые растровые изображения.
 
-```python
-def extract_raster_images(pdf_path, output_dir):
-    """Извлекает все растровые изображения из PDF в исходном качестве."""
-    doc = fitz.open(pdf_path)
-    for page_num in range(len(doc)):
-        page = doc[page_num]
-        for img_index, img in enumerate(page.get_images()):
-            xref = img[0]
-            base = doc.extract_image(xref)
-            ext = base["ext"]
-            with open(f"{output_dir}/page{page_num+1}_img{img_index+1}.{ext}", "wb") as f:
-                f.write(base["image"])
-            print(f"page{page_num+1}_img{img_index+1}: {base['width']}x{base['height']}")
-    doc.close()
-```
+Функция `extract_raster_images` в `scripts/pdf_tools.py`.
 
 **Когда применять:** размеры извлечённых изображений ≥ 800 px по ширине, и они визуально полные (все подписи на месте).
 
@@ -133,20 +126,7 @@ def extract_raster_images(pdf_path, output_dir):
 
 Признак ситуации: после Стратегии A на схеме нет важных меток, которые видны в исходном PDF.
 
-```python
-def crop_with_overlay_text(pdf_path, page_num, bbox, output_path, dpi=288):
-    """Кадрирование области с СОХРАНЕНИЕМ всего векторного текста.
-    Используется для схем с векторными подписями поверх растра."""
-    doc = fitz.open(pdf_path)
-    page = doc[page_num]
-    scale = dpi / 72
-    mat = fitz.Matrix(scale, scale)
-    clip = fitz.Rect(*bbox)
-    pix = page.get_pixmap(matrix=mat, clip=clip)
-    pix.save(output_path)
-    print(f"Saved {output_path}: {pix.width}x{pix.height}")
-    doc.close()
-```
+Функция `crop_with_overlay_text` в `scripts/pdf_tools.py`.
 
 **Workflow:**
 1. `preview_page` → определить bbox визуально
@@ -157,29 +137,7 @@ def crop_with_overlay_text(pdf_path, page_num, bbox, output_path, dpi=288):
 
 Для случая, когда векторная графика **перемешана** с текстом статьи в одном content stream (раньше так делал TikZ в IEEE-шаблонах).
 
-```python
-def remove_text_keep_graphics(input_pdf, output_pdf, pages_to_process):
-    """Удаляет весь текст из PDF, оставляя только векторную графику."""
-    doc = fitz.open(input_pdf)
-    for page_num in pages_to_process:
-        page = doc[page_num]
-        for block in page.get_text("dict")["blocks"]:
-            if block["type"] == 0:  # текстовый блок
-                page.add_redact_annot(fitz.Rect(block["bbox"]), fill=(1, 1, 1))
-        page.apply_redactions()
-    doc.save(output_pdf)
-    doc.close()
-
-def extract_graphs_from_clean_pdf(clean_pdf, output_dir, coordinates, dpi=600):
-    """Извлекает графики из PDF без текста по заданным координатам."""
-    doc = fitz.open(clean_pdf)
-    for fig_name, info in coordinates.items():
-        page = doc[info['page']]
-        mat = fitz.Matrix(dpi/72, dpi/72)
-        pix = page.get_pixmap(matrix=mat, clip=fitz.Rect(info['bbox']))
-        pix.save(f"{output_dir}/{fig_name}.png")
-    doc.close()
-```
+Функции `remove_text_keep_graphics` и `extract_graphs_from_clean_pdf` в `scripts/pdf_tools.py`.
 
 ### Удаление подписи «Fig. N.» из кропа
 
@@ -218,48 +176,7 @@ sed -i 's/\\usepackage{lmodern}/% \\usepackage{lmodern} % skipped/' custom_templ
 
 ### Шаг 3: Структура Markdown-файла
 
-```markdown
----
-title: "Название статьи на русском"
-author:
-  - "Авторы (транслитерированные)"
-date: ""
-documentclass: article
-papersize: a4
-fontsize: 10pt
-geometry: "margin=2cm"
-header-includes:
-  - \usepackage{fontspec}
-  - \setmainfont{DejaVu Serif}
-  - \setsansfont{DejaVu Sans}
-  - \setmonofont{DejaVu Sans Mono}
-  - \usepackage{unicode-math}
-  - \setmathfont{Latin Modern Math}
-  - \usepackage{amsmath,amssymb,amsthm}
-  - \usepackage{graphicx}
-  - \usepackage{float}
-  - \usepackage{booktabs}
-  - \usepackage{caption}
-  - \usepackage{algorithm}
-  - \usepackage{algpseudocode}
-  - \usepackage[hidelinks]{hyperref}
-  - \hypersetup{pdftitle={Название},pdfauthor={Авторы},pdflang={ru-RU}}
-  - \usepackage{enumitem}
-  - \newtheorem{definition}{Определение}
-  - \newtheorem{assumption}{Предположение}
-  - \newtheorem{lemma}{Лемма}
-  - \newtheorem{theorem}{Теорема}
-  - \newtheorem*{remark}{Замечание}
-  - \captionsetup{font=small,labelfont=bf}
-  - \renewcommand{\abstractname}{Аннотация}
-  - \renewcommand{\refname}{Литература}
-  - \renewcommand{\figurename}{Рис.}
-  - \renewcommand{\tablename}{Таблица}
-  - \floatname{algorithm}{Алгоритм}
-  - \renewcommand{\algorithmicrequire}{\textbf{Вход:}}
-  - \renewcommand{\algorithmicensure}{\textbf{Выход:}}
----
-```
+Готовый скелет — файл `templates/article-onecol.md`: скопируйте и заполните `title`, `author` и `\hypersetup`. Блок перенесён в шаблон, чтобы не перепечатывать его в каждую статью.
 
 ### Шаг 4: Компиляция
 
@@ -282,17 +199,11 @@ pandoc translation.md \
 
 **Решение: заменить `\tag{N}` на `\qquad\text{(N)}`, а окружение — на `\[ … \]` (не `\begin{equation}`, иначе amsmath добавит свой номер):**
 
-```python
-import re
-def fix_tags(content):
-    return re.sub(r'\\tag\{([^}]+)\}',
-                  lambda m: f'\\qquad\\text{{({m.group(1)})}}', content)
-```
+Функция `fix_tags` в `scripts/pdf_tools.py`.
 
 #### Проблема: Markdown `$$...$$` внутри `\begin{theorem}`
 
 Pandoc конвертирует `$$...$$` в `\[...\]`, что может конфликтовать с amsthm. Внутри теорем использовать чистый LaTeX (`\begin{equation*}...\end{equation*}` или `\[...\]`).
-
 
 ---
 
@@ -300,32 +211,7 @@ Pandoc конвертирует `$$...$$` в `\[...\]`, что может кон
 
 ### Автоопределение раскладки оригинала
 
-```python
-import fitz
-
-def detect_columns(pdf_path, page_num=1, min_frac=0.6):
-    # Возвращает 2, если текстовые блоки страницы образуют две колонки
-    # (достаточная доля блоков целиком в левой половине и достаточная — в правой),
-    # иначе 1. По умолчанию смотрим страницу 2 (на первой — шапка и аннотация).
-    doc = fitz.open(pdf_path)
-    page = doc[min(page_num, len(doc) - 1)]
-    mid = page.rect.width / 2
-    left = right = spanning = 0
-    for b in page.get_text("dict")["blocks"]:
-        if b["type"] != 0:
-            continue
-        x0, _, x1, _ = b["bbox"]
-        if x1 < mid + 10:
-            left += 1
-        elif x0 > mid - 10:
-            right += 1
-        else:
-            spanning += 1
-    doc.close()
-    total = left + right + spanning
-    two = total and (left + right) / total >= min_frac and left and right
-    return 2 if two else 1
-```
+Функция `detect_columns` в `scripts/pdf_tools.py`.
 
 Результат сообщать пользователю одной фразой («оригинал двухколоночный → перевод свёрстан в две колонки»).
 
@@ -333,18 +219,7 @@ def detect_columns(pdf_path, page_num=1, min_frac=0.6):
 
 Отличия от одноколоночного шаблона — `classoption`, поля, `microtype`, `emergencystretch`:
 
-```yaml
-documentclass: article
-classoption: twocolumn
-papersize: a4
-fontsize: 10pt
-geometry: "margin=1.6cm, columnsep=0.6cm"
-header-includes:
-  # ... стандартный блок из Приложения ...
-  - \usepackage{microtype}
-  - \setlength{\emergencystretch}{3em}
-  - \hyphenation{про-ек-ци-он-но-управ-ля-е-мый на-блю-да-те-лей вос-ста-нов-ле-ния}
-```
+Готовый скелет — файл `templates/article-twocol.md` (блок из Приложения плюс `microtype` и `emergencystretch`). Отличия от одноколоночного:
 
 DejaVu Serif широкий; без `microtype` + `emergencystretch` узкая колонка даёт рваные межсловные пробелы и overfull-строки. Список `\hyphenation` пополнять длинными терминами конкретной статьи, если в логе остаются underfull-строки.
 
@@ -439,7 +314,6 @@ grep -A1 "Overfull" translation.log | head # какие строки .tex вин
 11. **Таблицы** — «Таблица I.», содержимое перевести
 12. **Алгоритмы** — «Алгоритм 1», ключевые слова локализованы
 13. **Литература** — **оставить на языке оригинала**, имена авторов не транслитерировать
-
 
 ### Стиль изложения (новое в v4)
 
@@ -815,6 +689,8 @@ pip install PyMuPDF reportlab Pillow --break-system-packages
 
 ### Пример: вызов всего pipeline
 
+Пример показывает склейку шагов; примитивы (извлечение изображений, `fix_tags`) — из `scripts/pdf_tools.py`.
+
 ```python
 import fitz, os, re, subprocess
 
@@ -923,99 +799,13 @@ img.save("graph_opt.png", optimize=True, compress_level=9)
 
 ### Скрипт верификации
 
-```python
-import fitz, re, os, subprocess
-
-def verify_translation(md_path, pdf_path, original_pdf=None):
-    # 1. Базовые проверки
-    size_kb = os.path.getsize(pdf_path) / 1024
-    doc = fitz.open(pdf_path)
-    print(f"📄 Pages: {doc.page_count}, Size: {size_kb:.0f} KB")
-
-    # 2. Подсчёт формул
-    with open(md_path) as f:
-        md = f.read()
-    md_formulas = len(re.findall(r'\\qquad\\text\{\(\d+\)\}', md))
-    pdf_text = "\n".join(page.get_text() for page in doc)
-    pdf_formulas = len(set(re.findall(r'\((\d+)\)', pdf_text)))
-    print(f"📐 Formulas in MD: {md_formulas}, distinct (N) in PDF: {pdf_formulas}")
-
-    # 3. Поиск битых ссылок (?? — признак unresolved \ref)
-    if "??" in pdf_text:
-        print("⚠️  Found '??' in PDF — possible broken \\ref")
-
-    # 4. Проверка отсутствия английских заголовков-обрывков
-    en_markers = ["Introduction", "Conclusion", "Acknowledgments", "Abstract"]
-    found = [m for m in en_markers if m in pdf_text]
-    if found:
-        print(f"⚠️  English section markers in PDF: {found}")
-
-    # 5. Сравнение с оригиналом (опционально)
-    if original_pdf:
-        orig = fitz.open(original_pdf)
-        orig_text = "\n".join(p.get_text() for p in orig)
-        orig_formulas = len(set(re.findall(r'\((\d+)\)', orig_text)))
-        print(f"📋 Original formulas: {orig_formulas} vs translation: {pdf_formulas}")
-        if abs(orig_formulas - pdf_formulas) > 2:
-            print("⚠️  Significant formula count mismatch")
-        orig.close()
-
-    doc.close()
-    print("✅ Verification complete")
-```
-
+Скрипт — `scripts/verify_translation.py` (файл из скилла, обёрнут в `__main__`; копируйте, не перепечатывайте).
 
 ### Скрипт `check_layout.py` (новое в v4): overfull + выход за поля
 
 Запускать после каждой сборки. Первая часть читает `.log` XeLaTeX, вторая — растрирует страницы и ищет тёмные пиксели в полях (ловит то, что не попадает в лог: `\includegraphics` шире колонки, ошибки `\resizebox`).
 
-```python
-import re, sys, subprocess, fitz
-
-def tex_log_check(md, template="custom_template.tex", max_overfull_pt=2.0):
-    subprocess.run(["pandoc", md, "-s", "-o", "chk.tex", "--template", template], check=True)
-    subprocess.run(["xelatex", "-interaction=nonstopmode", "chk.tex"],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    log = open("chk.log", errors="replace").read()
-    tex = open("chk.tex").read().splitlines()
-    bad = []
-    pat = r"Overfull \\hbox \(([\d.]+)pt too wide\)[^\n]*?(?:at line|lines) (\d+)"
-    for m in re.finditer(pat, log):
-        pt, line = float(m.group(1)), int(m.group(2))
-        if pt > max_overfull_pt:
-            src = tex[line - 1][:100] if line - 1 < len(tex) else ""
-            bad.append((pt, line, src))
-    errs = re.findall(r"^! .*", log, flags=re.M)
-    under = len(re.findall(r"Underfull \\hbox", log))
-    return bad, errs, under
-
-def margin_check(pdf, margin_pt=40, dpi=72, thresh=250, min_pixels=30):
-    # Тёмные пиксели в левом/правом поле каждой страницы.
-    doc = fitz.open(pdf); hits = []
-    for i, page in enumerate(doc):
-        pix = page.get_pixmap(matrix=fitz.Matrix(dpi / 72, dpi / 72), colorspace=fitz.csGRAY)
-        w, h, buf = pix.width, pix.height, pix.samples
-        m = int(margin_pt * dpi / 72)
-        def dark(x0, x1):
-            return sum(1 for y in range(h) for x in range(x0, x1) if buf[y * w + x] < thresh)
-        l, r = dark(0, m), dark(w - m, w)
-        if l > min_pixels or r > min_pixels:
-            hits.append((i + 1, l, r))
-    doc.close(); return hits
-
-if __name__ == "__main__":
-    md, pdf = sys.argv[1], sys.argv[2]
-    bad, errs, under = tex_log_check(md)
-    for e in errs: print("LaTeX error:", e)
-    for pt, line, src in bad: print(f"Overfull {pt:.1f}pt at .tex line {line}: {src}")
-    print(f"Underfull lines: {under} (не блокер; лечится \\hyphenation)")
-    for p, l, r in margin_check(pdf): print(f"Page {p}: ink in margins (left={l}px, right={r}px)")
-    txt = "\n".join(pg.get_text() for pg in fitz.open(pdf))
-    if "??" in txt: print("'??' in PDF — broken \\ref")
-    en = [w for w in ["Introduction", "Conclusion", "Abstract", "Acknowledgments"] if w in txt]
-    if en: print("English markers:", en)
-    print("layout check OK" if not (bad or errs) else "FIX BEFORE DELIVERY")
-```
+Скрипт — `scripts/check_layout.py` (файл из скилла; копируйте, не перепечатывайте). Запуск:
 
 ```bash
 python3 check_layout.py translation.md translation.pdf
@@ -1124,52 +914,8 @@ pip install PyMuPDF reportlab Pillow --break-system-packages
 
 Готовый блок для копирования в YAML frontmatter:
 
-```yaml
-header-includes:
-  - \usepackage{fontspec}
-  - \setmainfont{DejaVu Serif}
-  - \setsansfont{DejaVu Sans}
-  - \setmonofont{DejaVu Sans Mono}
-  - \usepackage{unicode-math}
-  - \setmathfont{Latin Modern Math}
-  - \usepackage{amsmath,amssymb,amsthm}
-  - \usepackage{graphicx,float,booktabs,caption,enumitem}
-  - \usepackage{algorithm,algpseudocode}
-  - \usepackage[hidelinks]{hyperref}
-  - \hypersetup{pdftitle={Название},pdfauthor={Авторы},pdflang={ru-RU}}
-  - \newtheorem{theorem}{Теорема}
-  - \newtheorem{lemma}{Лемма}
-  - \newtheorem{definition}{Определение}
-  - \newtheorem*{remark}{Замечание}
-  - \captionsetup{font=small,labelfont=bf}
-  - \renewcommand{\abstractname}{Аннотация}
-  - \renewcommand{\refname}{Литература}
-  - \renewcommand{\figurename}{Рис.}
-  - \renewcommand{\tablename}{Таблица}
-  - \renewcommand{\thetable}{\Roman{table}}
-  - \floatname{algorithm}{Алгоритм}
-  - \renewcommand{\algorithmicrequire}{\textbf{Вход:}}
-  - \renewcommand{\algorithmicensure}{\textbf{Выход:}}
-  - \renewcommand{\algorithmicwhile}{\textbf{пока}}
-  - \renewcommand{\algorithmicdo}{\textbf{выполнять}}
-  - \renewcommand{\algorithmicend}{\textbf{конец}}
-  - \renewcommand{\algorithmicif}{\textbf{если}}
-  - \renewcommand{\algorithmicthen}{\textbf{то}}
-  - \renewcommand{\algorithmicelse}{\textbf{иначе}}
-  - \renewcommand{\algorithmicreturn}{\textbf{вернуть}}
-  - \newcommand{\R}{\mathbb{R}}
-  - \newcommand{\E}{\mathbb{E}}
-  - \newcommand{\Var}{\operatorname{Var}}
-  - \newcommand{\diag}{\operatorname{diag}}
-```
+Полный блок перенесён в шаблон `templates/article-onecol.md` — копируйте оттуда, дубль здесь не приводится.
 
 ### Двухколоночный вариант — добавить к YAML выше
 
-```yaml
-classoption: twocolumn
-geometry: "margin=1.6cm, columnsep=0.6cm"
-header-includes:
-  # ... всё из блока выше плюс:
-  - \usepackage{microtype}
-  - \setlength{\emergencystretch}{3em}
-```
+Двухколоночный вариант — в шаблоне `templates/article-twocol.md`.
