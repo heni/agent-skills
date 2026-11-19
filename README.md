@@ -19,9 +19,7 @@
 ## Установка
 
 Каноническое место — `~/.agents/skills/` (нативно сканируется Kimi Code и
-Codex CLI). Клонируем в отдельный каталог и выставляем симлинки: прямой клон
-в `~/.agents/skills/` вложит скиллы на лишний уровень (`agent-skills/<имя>`)
-и они не будут найдены:
+Codex CLI). Клонируем в отдельный каталог и выставляем симлинки:
 
     git clone git@github.com:heni/agent-skills.git ~/agent-skills
     ln -s ~/agent-skills/<имя> ~/.agents/skills/<имя>   # Kimi Code, Codex CLI
