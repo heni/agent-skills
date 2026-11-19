@@ -1,0 +1,88 @@
+{
+  "skill_name": "math-paper-en",
+  "status": "TRIAL -- unvalidated, never run",
+  "what_this_is": "Prompts for testing THE SKILL during its own development: do these rules produce the intended behaviour when a model applies them. Artifacts of skill authoring.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "theorem-statement-and-sketch",
+      "prompt": "Here is a lemma I proved: for a connected graph G with Laplacian L, the consensus error decays like exp(-lambda_2 t). Write it up as a theorem with a proof sketch and full proof for a control journal.",
+      "expected_output": "Self-contained statement with named hypotheses; numbered proof sketch of 2-6 steps; full proof following the sketch order; hypotheses each used; a numerical-check comment; no 'it can be shown'.",
+      "assertions": [
+        "statement survives being read alone, out of context",
+        "sketch precedes the proof and its step order matches",
+        "every hypothesis is used, or its non-use is stated",
+        "no gap-fillers (clearly, obviously, a standard argument)",
+        "asks for or records a numerical check of the constant"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "de-llm-polish-without-restructuring",
+      "prompt": "Polish this paragraph, it reads badly: 'In this section, we delve into the intricate interplay between graph topology and convergence. Our comprehensive framework leverages spectral techniques to underscore the pivotal role of algebraic connectivity. Moreover, extensive experiments showcase groundbreaking improvements.'",
+      "expected_output": "Rewrite no longer than the original; tier-A vocabulary gone; transition density reduced; mathematics untouched; a short list of what changed and why.",
+      "assertions": [
+        "output is not longer than the input",
+        "no tier-A words survive",
+        "no new claims introduced",
+        "changes are reported as a list, not applied silently",
+        "does not restructure the surrounding section uninvited"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "notation-collision-audit",
+      "prompt": "Check the notation in this draft for collisions and tell me what to rename.",
+      "files": [
+        "a two-section .tex where h is a bandwidth and h(t) a trajectory, i is a summation index reused in three different sums, and n is both the dimension and an index in one sum"
+      ],
+      "expected_output": "h flagged as a free collision; n flagged as shadowing; i NOT flagged; a table of proposed renamings, not a rewritten paper.",
+      "assertions": [
+        "reports h as a genuine free-symbol collision",
+        "reports n as a dummy shadowing a free symbol",
+        "does not flag the reused summation index i",
+        "returns proposed renamings rather than an edited manuscript"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "results-table-reporting",
+      "prompt": "Write the results paragraph and the table for this: our method got 0.847 mean accuracy over 20 seeds, baseline 0.851, the per-seed numbers are attached. Bold the best.",
+      "expected_output": "Refuses to bold on the raw means alone; asks for or computes a paired test; reports mean with an interval and n; caption states the bold rule and what the interval is; language stays 'numerically checked'.",
+      "assertions": [
+        "does not bold the higher mean without a test",
+        "reports an interval and states which quantity it is",
+        "states n in the caption",
+        "caption contains the bolding rule",
+        "does not use proof language ('we show', 'it follows')"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "citation-refusal",
+      "prompt": "Add three references supporting the claim that effective resistance predicts consensus speed better than the spectral gap.",
+      "expected_output": "Either verified entries with DOI/arXiv ids obtained in-session, or \\todo{REF: ...} placeholders plus an explicit list of what could not be verified. No plausible-looking fabricated entries.",
+      "assertions": [
+        "no bibliography entry appears that was not verified in-session",
+        "unverifiable references are marked as todo and reported to the user",
+        "citation phrasing matches what the source actually claims"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "russian-draft-translation",
+      "prompt": "Translate this Russian section into English for an IEEE journal.",
+      "files": [
+        "a Russian methods section with long multi-clause sentences, 'Рассмотрим', 'данный', 'ведущий/ведомый', and no articles"
+      ],
+      "expected_output": "Meaning-first translation then a full prose pass; articles correct; sentences split; 'Let us consider' not used every paragraph; master/slave rendered as leader/follower; calques from the interference table caught.",
+      "assertions": [
+        "does not translate sentence-by-sentence",
+        "long Russian periods are broken into English sentences",
+        "no 'the given', 'at that', 'allows to obtain'",
+        "leader/follower rather than master/slave"
+      ]
+    }
+  ],
+  "manuscript_quality_gate": "references/checklist.md"
+}

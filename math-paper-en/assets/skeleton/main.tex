@@ -1,0 +1,71 @@
+% ---------------------------------------------------------------------------
+% main.tex -- preamble, macros, and \input lines ONLY. No content lives here.
+% Build:  make            (or: latexmk -pdf main.tex)
+% Check:  make check      (audit.py on the .tex tree, bibcheck.py on refs.bib)
+%
+% Every section is its own file under sections/. Nothing but preamble, macros
+% and \input lines belongs here -- if you are editing prose in main.tex, the
+% layout has already broken. See references/bibliography.md.
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{amsart}   % or IEEEtran / llncs / article
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{graphicx}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\usepackage[capitalise,nameinlink]{cleveref}   % must come after hyperref
+
+% --- theorem environments (one shared numbering scheme) --------------------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\input{macros}                 % every notation-bearing symbol lives here
+
+\begin{document}
+
+% Title, authors and affiliations: fill in yourself.
+% Never let a tool guess an affiliation -- a wrong one is worse than none.
+\title{TITLE}
+\author{AUTHOR}
+\date{\today}
+
+\begin{abstract}
+\input{sections/00-abstract}
+\end{abstract}
+
+\maketitle
+
+\input{sections/01-introduction}
+\input{sections/02-preliminaries}
+\input{sections/03-main}
+\input{sections/04-proofs}
+\input{sections/05-numerics}
+\input{sections/06-final-remarks}
+
+\section*{Acknowledgements}
+\input{sections/07-acknowledgements}
+
+% Bibliography. Entries in refs.bib are EXPORTED from a real record
+% (MathSciNet / zbMATH / arXiv / DOI), never typed from memory, then
+% normalised: bloat stripped, one spelling per person, capitals braced,
+% en-dashes in page ranges, doi/eprint kept. See references/bibliography.md.
+\bibliographystyle{amsalpha}   % alphanumeric keys: [Kra96], [SY09], [A+13]
+\bibliography{refs}
+
+% biblatex + biber alternative (better Unicode, per-chapter lists via
+% refsection; use for theses and anything you control end to end):
+%   \usepackage[backend=biber,style=alphabetic,maxbibnames=99]{biblatex}
+%   \addbibresource{refs.bib}
+%   ... \printbibliography
+
+\end{document}

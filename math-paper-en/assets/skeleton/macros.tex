@@ -1,0 +1,36 @@
+% ---------------------------------------------------------------------------
+% macros.tex -- one macro per notation-bearing symbol.
+%
+% Why: renaming a symbol paper-wide becomes a one-line edit, and you can test
+% whether a letter is still free by commenting out its macro and recompiling.
+% Keep the notation table below in sync with the definitions.
+%
+%  symbol   macro     meaning                    type / domain
+%  ---------------------------------------------------------------------
+%  R        \R        real numbers               field
+%  G        \Gr       communication graph        undirected, n nodes
+%  L        \Lap      graph Laplacian of \Gr     R^{n x n}, PSD
+%  lambda_2 \lamtwo   algebraic connectivity     >= 0
+% ---------------------------------------------------------------------------
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\Exp}{\mathbb{E}}
+
+\newcommand{\Gr}{\mathcal{G}}
+\newcommand{\Lap}{L}
+\newcommand{\lamtwo}{\lambda_{2}}
+
+\newcommand{\eps}{\varepsilon}          % never \epsilon: reads as \in
+\newcommand{\emptyS}{\varnothing}       % never \emptyset: reads as 0
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\ip}[2]{\langle #1, #2 \rangle}
+
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}   % must be empty before submission
